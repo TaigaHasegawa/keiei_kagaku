@@ -1,0 +1,454 @@
+//====================================================================/
+//　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　/
+// artisoc                                                            /
+//                                                                    /
+//====================================================================/
+
+Version = 4.2;
+
+
+
+//-------------------------------------------------------
+// Component Tree
+//-------------------------------------------------------
+UNIVERSE {
+    Space TestSpace(0,0),Square_2D(1000, 500, Loop, North, 1, !Map_3D){
+        AgtType TestAgent(0, 0)[0] {
+            Dim ID(0, 0) As Integer = (0);
+            Dim X(0, 0) As Double = (0.0);
+            Dim Y(0, 0) As Double = (0.0);
+            Dim Layer(0, 0) As Integer = (0);
+            Dim Direction(0, 0) As Double = (0.0);
+        }
+    }
+    Dim Message(0, 0) As String = ("");
+    Dim transition(0, 0) As Integer = (0);
+}
+
+
+//-------------------------------------------------------
+// Agent Variable Initial Data
+//-------------------------------------------------------
+Initial_Value {
+}
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE
+Univ_Init{
+
+}
+
+Univ_Step_Begin{
+	if (getCountStep() == 1) then
+		DrawClear("test_map")
+		DrawString("test_map", COLOR_BLACK, 20, 10, 60, "DrawLine関数")
+		Universe.transition = 0
+	end if
+
+	// Draw Line
+	if (getCountStep() > 0 and getCountStep() < 200) then
+		drawLineSample()
+	end if
+
+	// Draw Arc
+	if (getCountStep() == 200) then
+		Universe.transition = 0
+	end if
+	if (getCountStep() >= 200 and GetCountStep() < 380) then
+		DrawClear("test_map")
+		drawArcSample()
+		DrawString("test_map", COLOR_BLACK, 20 + Universe.transition * 0.1, 200, 60 + Universe.transition, "DrawArc関数(Open)")
+	end if
+
+	// Draw Arc
+	if (getCountStep() == 380) then
+		Universe.transition = 0
+	end if
+	if (getCountStep() >= 380 and GetCountStep() < 560) then
+		DrawClear("test_map")
+		drawArcSample2()
+		DrawString("test_map", COLOR_BLACK, 20, 10 +Universe.transition, 60, "DrawArc関数(Close)")
+		if (getCountStep() > 530) then
+			DrawOval("test_map", COLOR_BLACK, 5, 190, 150, 50, 50, true)
+		end if
+	end if
+
+	// Draw Oval
+	if (getCountStep() == 560) then
+		DrawClear("test_map")
+		DrawString("test_map", COLOR_BLUE, 50, 200, 200, "DrawOval関数")
+		Universe.transition = 0
+	end if
+	if (getCountStep() >= 560 and GetCountStep() < 920) then
+		drawOvalSample()
+	end if
+
+	// Draw Polygon
+	if (getCountStep() == 920) then
+		Universe.transition = 0
+	end if
+	if (getCountStep() >= 920 and GetCountStep() < 1200) then
+		DrawClear("test_map")
+		drawPolygonSample()
+		DrawString("test_map", COLOR_BLACK, 50, 100, 100, "DrawPolygon関数")
+	end if
+
+
+	// Draw String
+	if (getCountStep() == 1200) then
+	DrawClear("test_map")
+	end if
+	if (getCountStep() >= 1200 and GetCountStep() < 1500) then
+		drawStringSample()
+	end if
+	
+	if (getCountStep() mod 10 == 0) then
+//		PauseSimulation()
+	end if 
+
+	Universe.transition = Universe.transition + 1
+}
+
+// ライン描画サンプル
+sub drawLineSample() {
+	dim xpos_rnd as double
+	xpos_rnd = Rnd() * 1000
+	dim ypos_rnd as double
+	ypos_rnd = Rnd() * 500
+	dim size_rnd as double
+	size_rnd = Rnd() * 50 + 10
+	dim stroke_rnd as double
+	stroke_rnd = Rnd() * 100
+	dim color as integer
+	color = HSV(Rnd() * 360, 1, 1)
+	
+	DrawLine("test_map", color, stroke_rnd, 500,250, xpos_rnd, ypos_rnd)
+}
+
+//円弧描画サンプル
+sub drawArcSample() {
+	DrawArc("test_map", COLOR_BLUE, 50, 100, 100, 300, 300, 0, Universe.transition * 2, false)
+}
+
+//円弧描画サンプル
+sub drawArcSample2() {
+	DrawArc("test_map", RGB(255,160,0), 0, 100, 100, 300, 300, 0, Universe.transition *2, true)
+}
+
+// 楕円描画サンプル
+sub drawOvalSample() {
+	dim xpos_rnd as double
+	xpos_rnd = Rnd() * 1000
+	dim ypos_rnd as double
+	ypos_rnd = Rnd() * 500
+	dim size_rnd as double
+	size_rnd = Rnd() * 50 + 10
+
+	dim color as integer
+	color = HSV(Rnd() * 360, 1, 1)
+	
+	DrawOval("test_map", color, 5, xpos_rnd, ypos_rnd, size_rnd, size_rnd, true)
+	DrawOval("test_map", COLOR_BLACK, 5, xpos_rnd, ypos_rnd, size_rnd, size_rnd, false)
+}
+
+// 多角形描画サンプル
+sub drawPolygonSample() {
+	dim x(4) as Double
+	dim y(4) as Double
+
+	x(0) = 100 + Universe.transition * 0.1
+	y(0) = 100 + Universe.transition * 0.3
+
+	x(1) = 410 + Universe.transition * 0.06
+	y(1) = 110 + Universe.transition * 0.1
+
+	x(2) = 315 + Universe.transition * 0.8
+	y(2) = 315 + Universe.transition * 0.5
+
+	x(3) = 155 + Universe.transition * 0.7
+	y(3) = 355 + Universe.transition * 0.3
+
+	dim color as integer
+	color = HSV(Universe.transition mod 360 , 1, 1)
+
+	DrawPolygon("test_map", color, 5, x, y, true)
+	DrawPolygon("test_map", COLOR_BLACK, 10, x, y, false)
+}
+
+//文字描画サンプル
+sub drawStringSample() {
+	dim color as integer
+	color = HSV(360 * Rnd() , 1, 1)
+	dim xpos_rnd as double
+	xpos_rnd = Rnd() * 1000
+	dim ypos_rnd as double
+	ypos_rnd = Rnd() * 500
+	dim size_rnd as double
+	size_rnd = Rnd() * 50 + 10
+	dim str as String
+	str = "DrawString関数"
+
+	dim sel as integer
+	sel = 1+ CInt(Universe.transition mod 12)
+	str = Mid(str, sel, 1)
+	DrawString("test_map", color, size_rnd, xpos_rnd, ypos_rnd, str)
+}
+
+Univ_Step_End{
+	Universe.Message = "現在のステップ数=" & GetCountStep()
+}
+
+Univ_Finish{
+
+}
+#end_rule UNIVERSE
+
+
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE.TESTSPACE.TESTAGENT
+Agt_Init{
+
+}
+
+Agt_Step{
+
+}
+#end_rule UNIVERSE.TESTSPACE.TESTAGENT
+
+
+
+
+//-------------------------------------------------------
+// Simulation Definition Division
+//-------------------------------------------------------
+Single_Simulation {
+    Step_Max = 0;
+    Time_Max = 0;
+    End_Condition = "";
+    Exec_Wait = 50;
+    Exec_Wait_Max = 1000;
+    Random_Generator = Mersenne_twister;
+    Exec_Order = Random;
+    Exec_Order_Random_First_Step_Only = No;
+    Random_Seed = 0;
+    Redraw_Timing = Step;
+    Redraw_Interval = 1;
+    Garbage_Interval = 0;
+}
+
+
+//-------------------------------------------------------
+// Simulation Loop Definition Division
+//-------------------------------------------------------
+Repeat_Simulation {
+    Value_Change = None;
+    Initial_Value_Change_None {
+        Repeat_Max = 1;
+    }
+}
+
+
+//-------------------------------------------------------
+// 2 Dimension Map Display Definition Division
+//-------------------------------------------------------
+Map_Output {
+    Map_Space_Name = "Universe.TestSpace";
+    Map_Name = "test_map";
+    Title = "Map";
+    Disable = No;
+    Background_Color = 255, 255, 255;
+    Position_x = 12;
+    Position_y = 2;
+    Size_x = 730;
+    Size_y = 518;
+    Map_Cell_Size = 0;
+    Remarks = No;
+    Legend_Pos = Top;
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    FastDraw = No;
+    Draw_Timing = Simulation_Step;
+    Draw_Interval = 1;
+    Axis_Label = "", "";
+    Draw_Range = 0, 0, 1000, 500;
+    Ruled_Line = No;
+    Text_Display = Yes;
+    Text_Display_Variable_Name = "Universe.Message";
+    Chess_Type_Display_Position = Yes;
+    Background_Transparent = No;
+    Target_Layer = 0;
+    Coordinate_Display = No;
+    Space_Kind = Square_2D;
+    BG_Pict = No;
+    BG_Type = 0;
+    BG_Var_Name = "";
+    BG_File_Name = "";
+    Origin_Position = 1;
+    Output_Group_Name = "";
+}
+
+
+//-------------------------------------------------------
+// Time Graph Output Definition Division
+//-------------------------------------------------------
+Time_Graph {
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    Draw_Timing = Simulation_Step;
+    Draw_Interval = 1;
+    Graph_Name = "Time Series Grapgh";
+    Title = "The Amount ";
+    Disable = No;
+    Background_Color = 255, 255, 255;
+    Remarks = Yes;
+    Legend_Pos = Top;
+    FastDraw = No;
+    Position_x = 187;
+    Position_y = 110;
+    Size_x = 500;
+    Size_y = 300;
+    Map_Cell_Size = -1;
+    Axis_Label = "", "";
+    Draw_By_JFree_Chart = Yes;
+    Scale = 0, 0.0, 1000, 100.0, 100, 10.0;
+    ScaleAuto = Yes, Yes;
+    Output_Group_Name = "";
+    Output {
+        Graph_Element_Name = "transition";
+        Line_Color = 255, 0, 0;
+        Line_Width = 2;
+        Marker_Id = 0;
+        Output_Expression = "";
+        Expression_Value_Display = No;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (0, 255, 0);
+    }
+}
+
+
+//-------------------------------------------------------
+// Control Panel Definition Division
+//-------------------------------------------------------
+Control_Panel {
+    Display_Area = 0, 0, 136, 49;
+    Display_Type = 0;
+}
+
+
+//-------------------------------------------------------
+// Space Initial Value Definition Divsion
+//-------------------------------------------------------
+Space_Initial {
+}
+
+
+//-------------------------------------------------------
+// Other Miscellaneous Data Definition Division
+//-------------------------------------------------------
+Others_Data {
+    Indent = 4;
+    Rule_Colored = Yes;
+    Rule_LineNo = Yes;
+    Window_Hide_Run = 1;
+    Debug_Position_x = 75;
+    Debug_Position_y = 75;
+    Debug_Size_x = 400;
+    Debug_Size_y = 200;
+    Console_Position_x = 2;
+    Console_Position_y = 400;
+    Console_Size_x = 600;
+    Console_Size_y = 120;
+    Componen_Tree_Position_x = 2;
+    Componen_Tree_Position_y = 2;
+    Componen_Tree_Size_x = 250;
+    Componen_Tree_Size_y = 407;
+    Console_Background_Color = 16777215;
+    Console_Foreground_Color = 255;
+    Console_DisplayLines_Max = 500;
+    plug_in_module_name = "";
+    Font_Name = "Dialog";
+    Font_Char_Set = 0;
+    Font_Size = 16.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 0, 0, 0;
+}
+
+
+//-------------------------------------------------------
+// Network Information Definition Division
+//-------------------------------------------------------
+Network_Info {
+    Global_Space_Area = 0, 0, 100, 100;
+    Local_Space_Info {
+    }
+}
+
+
+//-------------------------------------------------------
+// Window Location Definition Division
+//-------------------------------------------------------
+Window_Rectangle {
+    Window_Name = Main_Window, 72, 66, 800, 700;
+    Window_Name = Output_Setting_Window, 127, 214, 480, 350;
+    Window_Name = Artisoc_Help_Window, 10, 10, 400, 300;
+}
+
+
+//-------------------------------------------------------
+// Help Favorite Division
+//-------------------------------------------------------
+Help_Favorite {
+}
+
+
+//-------------------------------------------------------
+// Model Description Division
+//-------------------------------------------------------
+Model_Description {
+    Universe {
+        Function Univ_Init {
+        }
+        Function Univ_Step_Begin {
+        }
+        Function drawLineSample {
+        }
+        Function drawArcSample {
+        }
+        Function drawArcSample2 {
+        }
+        Function drawOvalSample {
+        }
+        Function drawPolygonSample {
+        }
+        Function drawStringSample {
+        }
+        Function Univ_Step_End {
+        }
+        Function Univ_Finish {
+        }
+    }
+    Space Universe.TestSpace {
+    }
+    Agent Universe.TestSpace.TestAgent {
+        Function Agt_Init {
+        }
+        Function Agt_Step {
+        }
+    }
+}

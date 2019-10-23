@@ -1,0 +1,919 @@
+//====================================================================/
+//　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　/
+// artisoc                                                            /
+//                                                                    /
+//====================================================================/
+
+Version = 4.0;
+
+
+
+//-------------------------------------------------------
+// Component Tree
+//-------------------------------------------------------
+UNIVERSE {
+    Space Map(0,0),Square_2D(50, 50, !Loop, North, 1, !Map_3D){
+        AgtType Point(0, 0)[0] {
+            Dim ID(0, 0) As Integer = (0);
+            Dim X(0, 0) As Double = (0.0);
+            Dim Y(0, 0) As Double = (0.0);
+            Dim Layer(0, 0) As Integer = (0);
+            Dim Direction(0, 0) As Double = (0.0);
+            Dim ConnectPoints(0, 0) As AgtSet = ();
+            Dim BranchNumber(0, 0) As Integer = (0);
+            Dim Color(0, 0) As Integer = (0);
+            Dim ConnectPointsView(0, 0) As AgtSet = ();
+        }
+    }
+    Dim BranchNumber(0, 0) As Integer = (0);
+    Dim PointNumber(0, 0) As Integer = (0);
+    Dim PointID(0, 0)[10000] As Agt = (10000*0);
+    Dim BranchViewMode(0, 0) As Boolean = (0);
+    Dim LongTailVariable(0, 0)[2][21] As Integer = (42*0);
+    Dim LongTailDivisionNumber(0, 0) As Integer = (0);
+    Space PlotGraph(0,0),Square_2D(100, 100, Loop, North, 1, !Map_3D){
+        AgtType Point(0, 0)[0] {
+            Dim ID(0, 0) As Integer = (0);
+            Dim X(0, 0) As Double = (0.0);
+            Dim Y(0, 0) As Double = (0.0);
+            Dim Layer(0, 0) As Integer = (0);
+            Dim Direction(0, 0) As Double = (0.0);
+            Dim Frequency(0, 0) As Integer = (0);
+        }
+    }
+}
+
+
+//-------------------------------------------------------
+// Agent Variable Initial Data
+//-------------------------------------------------------
+Initial_Value {
+    UNIVERSE.BRANCHNUMBER = 1(3);
+    UNIVERSE.POINTNUMBER = 1(0);
+    UNIVERSE.BRANCHVIEWMODE = 1(1);
+}
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE
+Univ_Init{
+
+	// Initialize
+	Universe.LongTailDivisionNumber = 21	
+}
+
+Univ_Step_Begin{
+
+	Dim myPoint As Agt
+	Dim myAgtSet As AgtSet
+	
+	// Create Point
+	myPoint = CreateAgt(Universe.Map.Point)
+	Universe.PointID(Universe.PointNumber) = myPoint
+	Universe.PointNumber = Universe.PointNumber + 1
+	
+}
+
+Univ_Step_End{
+
+	Dim AllPointAgtSet As AgtSet
+	Dim TargetPointAgt As Agt
+	Dim nBranch As Integer
+	Dim MaxBranchNumber As Integer
+	Dim ColorVariable As Double
+	Dim Point As Agt
+	Dim ct As Integer
+	Dim longtale_ct As Integer
+	Dim PlotGraphPointAgtSet As AgtSet
+	Dim PlotGraphPointAgt As Agt
+	Dim BranchNumberbak As Integer
+
+	nBranch = 0
+	MaxBranchNumber = 0
+	BranchNumberbak = 0
+	
+	// Colorの変更
+	MakeAgtSet(AllPointAgtSet, Universe.Map.Point)
+	For Each TargetPointAgt In AllPointAgtSet
+		TargetPointAgt.BranchNumber = CountAgtSet(TargetPointAgt.ConnectPoints)		
+		nBranch = nBranch + CountAgtSet(TargetPointAgt.ConnectPoints)
+		
+		If TargetPointAgt.BranchNumber > MaxBranchNumber Then
+			MaxBranchNumber = TargetPointAgt.BranchNumber
+		End If
+	Next TargetPointAgt
+
+	If MaxBranchNumber > 0 Then
+		For Each TargetPointAgt In AllPointAgtSet
+			ColorVariable = CDbl(CountAgtSet(TargetPointAgt.ConnectPoints)) / CDbl(MaxBranchNumber)
+			TargetPointAgt.Color = RGB(255, CInt(255 * (1.0 - ColorVariable)), CInt(255 * (1.0 - ColorVariable)))
+		Next TargetPointAgt
+		
+		// Sorting
+		SortAgtSet(AllPointAgtSet, "Universe.Map.Point.BranchNumber", False)
+		longtale_ct = 0
+		ct = 0
+		MakeAgtSet(PlotGraphPointAgtSet, Universe.PlotGraph.Point)
+		Do While(True)
+			If CountAgtSet(PlotGraphPointAgtSet) > 0 Then
+				PlotGraphPointAgt = GetAgt(PlotGraphPointAgtSet, 0)
+				DelAgtSet2(PlotGraphPointAgtSet, PlotGraphPointAgt)
+				DelAgt(PlotGraphPointAgt)
+			Else
+				Break
+			End If			
+		Loop
+		
+		For Each Point In AllPointAgtSet
+			If (CountAgtSet(AllPointAgtSet) > 0) Then
+				If CInt(CDbl(CountAgtSet(AllPointAgtSet)) / CDbl(Universe.LongTailDivisionNumber)) > 0 Then
+					// 21 steps over
+					If CInt(ct Mod (CDbl(CountAgtSet(AllPointAgtSet)) / CDbl(Universe.LongTailDivisionNumber)) == 0) Then
+						Universe.LongTailVariable(0, longtale_ct) = ct
+						Universe.LongTailVariable(1, longtale_ct) = Point.BranchNumber
+						
+						longtale_ct = longtale_ct + 1
+					End If
+				Else
+					// During 1 - 21 steps
+					Universe.LongTailVariable(0, longtale_ct) = ct
+					Universe.LongTailVariable(1, longtale_ct) = Point.BranchNumber
+						
+					longtale_ct = longtale_ct + 1					
+				End If
+				
+				// View both logarithm graph
+				If Point.BranchNumber <> BranchNumberbak Then					
+					If ct > 0 Then
+						PlotGraphPointAgt.X = Log(Point.BranchNumber) / Log(10)
+						PlotGraphPointAgt.Y = Log(PlotGraphPointAgt.Frequency) / Log(10)
+					End If		
+					PlotGraphPointAgt = CreateAgt(Universe.PlotGraph.Point)
+					PlotGraphPointAgt.Frequency = 1
+					BranchNumberbak  = Point.BranchNumber 
+				Else
+					PlotGraphPointAgt.Frequency = PlotGraphPointAgt.Frequency + 1
+				End If
+				
+			End If
+			ct = ct + 1
+		Next Point
+		If PlotGraphPointAgt.Frequency > 0 Then
+			PlotGraphPointAgt.X = Log(Point.BranchNumber) / Log(10)
+			PlotGraphPointAgt.Y = Log(PlotGraphPointAgt.Frequency) / Log(10)
+		End If
+	Else
+		TargetPointAgt.Color = RGB(255, 0, 0)
+	End If
+
+}
+
+Univ_Finish{
+
+}
+#end_rule UNIVERSE
+
+
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE.MAP.POINT
+Agt_Init{
+	Dim nBranch As Integer
+	Dim TargetPointAgt As Agt
+	Dim ConnectPointsAgtSet As AgtSet
+	Dim AllPointAgtSet As AgtSet
+	Dim pos As Integer
+	Dim i As Integer	
+	Dim n As Integer
+	
+	// Point Initialize	
+	My.X =(GetWidthSpace(Universe.Map) - 1) * Rnd()
+	My.Y =(GetHeightSpace(Universe.Map) - 1) * Rnd()
+	My.Color = COLOR_RED
+
+	// Connect branch
+	If Universe.PointNumber > 0 Then
+		nBranch = 0
+		MakeAgtSet(AllPointAgtSet, Universe.Map.Point)
+		For Each TargetPointAgt In AllPointAgtSet
+			nBranch = nBranch + CountAgtSet(TargetPointAgt.ConnectPoints)
+		Next TargetPointAgt
+		n = Universe.PointNumber
+
+		Do  While(1)
+			If CountAgtSet(ConnectPointsAgtSet) == Universe.BranchNumber Then
+				Break
+			End If
+			
+			If nBranch > 0 Then
+			
+				// Decide branch position
+				pos = CInt(nBranch * Rnd())
+			
+				// Get Point ID from branch position
+				i = 0
+				For Each TargetPointAgt In AllPointAgtSet
+					pos = pos - CountAgtSet(TargetPointAgt.ConnectPoints)
+					If pos < 0 Then
+						TargetPointAgt = Universe.PointID(i)
+						Break
+					Else
+						i = i + 1
+					End If
+				Next TargetPointAgt
+
+			Else			
+				// Choice Point
+				pos = CInt(n * Rnd())
+				TargetPointAgt = Universe.PointID(pos)
+			End If
+	
+			If GetAgtEntry(ConnectPointsAgtSet, TargetPointAgt) == -1 Then
+
+				addAgt(ConnectPointsAgtSet, TargetPointAgt)
+				
+				n = n-1
+				// Check Exit
+				If n == 0 Then
+					Break
+				End If
+			Else
+				// Select same point
+			End If
+
+		Loop
+		
+		For Each TargetPointAgt In ConnectPointsAgtSet		
+			addAgt(My.ConnectPoints, TargetPointAgt)
+				
+			For i=0 To (Universe.PointNumber - 1)
+				If Universe.PointID(i) == TargetPointAgt Then
+					Break
+				End If				
+			Next i
+			addAgt(TargetPointAgt.ConnectPoints, My)
+		Next TargetPointAgt 		
+	End If
+}
+
+Agt_Step{
+
+	Dim AroundPointAgtSet As AgtSet
+	Dim PointAgtSet As AgtSet
+	Dim Congestion As Integer
+	Dim MoveLength As Double
+	Dim ConnectPointsAgtSet As AgtSet
+	Dim Point As Agt
+
+	// When it is dowded, it aboids it
+	MakeAgtSet(PointAgtSet, Universe.Map.Point)
+	MakeAgtSetAroundOwnCell(AroundPointAgtSet, 1, PointAgtSet, False)
+	Congestion = CountAgtSet(AroundPointAgtSet)
+	
+	If Congestion >= 1 Then
+		MoveLength = 0.5
+		Turn(360 * Rnd())
+		Forward(MoveLength)
+	End If
+	
+	// ConnectPointsView
+	ClearAgtSet(My.ConnectPointsView)
+	If Universe.BranchViewMode == True Then
+		DuplicateAgtSet(ConnectPointsAgtSet, My.ConnectPoints)
+		For Each Point In ConnectPointsAgtSet
+			AddAgt(My.ConnectPointsView, Point)
+		Next Point
+	End If	
+}
+#end_rule UNIVERSE.MAP.POINT
+
+
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE.PLOTGRAPH.POINT
+Agt_Init{
+
+}
+
+Agt_Step{
+
+}
+#end_rule UNIVERSE.PLOTGRAPH.POINT
+
+
+
+
+//-------------------------------------------------------
+// Simulation Definition Division
+//-------------------------------------------------------
+Single_Simulation {
+    Step_Max = 10000;
+    Time_Max = 0;
+    End_Condition = "";
+    Exec_Wait = 100;
+    Exec_Wait_Max = 0;
+    Random_Generator = Java_Standard;
+    Exec_Order = Random;
+    Exec_Order_Random_First_Step_Only = No;
+    Random_Seed = 0;
+    Redraw_Timing = Step;
+    Redraw_Interval = 1;
+    Garbage_Interval = 0;
+}
+
+
+//-------------------------------------------------------
+// Simulation Loop Definition Division
+//-------------------------------------------------------
+Repeat_Simulation {
+    Value_Change = None;
+    Initial_Value_Change_None {
+        Repeat_Max = 1;
+    }
+}
+
+
+//-------------------------------------------------------
+// 2 Dimension Map Display Definition Division
+//-------------------------------------------------------
+Map_Output {
+    Map_Space_Name = "UNIVERSE.Map";
+    Map_Name = "Barabasi-Albert Model";
+    Title = "";
+    Disable = No;
+    Background_Color = 255, 255, 255;
+    Position_x = 380;
+    Position_y = 203;
+    Size_x = 408;
+    Size_y = 390;
+    Map_Cell_Size = 6;
+    Remarks = No;
+    Legend_Pos = Top;
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    FastDraw = No;
+    Draw_Timing = Simulation_Step;
+    Draw_Interval = 1;
+    Axis_Label = "", "";
+    Draw_Range = 0, 0, 50, 50;
+    Ruled_Line = No;
+    Text_Display = No;
+    Text_Display_Variable_Name = "";
+    Chess_Type_Display_Position = Yes;
+    Background_Transparent = No;
+    Target_Layer = 0;
+    Coordinate_Display = No;
+    Space_Kind = Square_2D;
+    BG_Pict = No;
+    BG_Type = 0;
+    BG_Var_Name = "";
+    BG_File_Name = "";
+    Origin_Position = 2;
+    Output_Group_Name = "";
+    Output {
+        Map_Element_Name = "Point";
+        Map_Element = Agent_Variable;
+        Output_Expression = "UNIVERSE.Map.Point";
+        Draw_Line = No;
+        Collection_Name = "";
+        Line_Type = 0;
+        Line_Arrow = 0;
+        Line_Width = 0;
+        Line_Color = 0, 0, 0;
+        Line_Type_Variable = "";
+        Line_Arrow_Variable = "";
+        Line_Width_Variable = "";
+        Line_Color_Variable = "";
+        Agent_Color = "UNIVERSE.Map.Point.Color";
+        Marker_Id = 1;
+        Effective_Figures = 0;
+        Format_Id = -1;
+        Agent_Image_Direction = No;
+        Icon_Type = 0;
+        Icon_Var_Name = "";
+        Icon_Transparent = No;
+        Icon_Enlarg_Reduce = No;
+        Icon_File_Name = "";
+        Num_Display = Yes;
+        Num_Var_Name = "UNIVERSE.Map.Point.BranchNumber";
+        Agent_Image_Magnify_by_value = Yes;
+        Agent_Image_Magnify_Value = 1.0;
+        Agent_Image_Magnify_Variable_Name = "";
+        Agent_Image_Transparency_by_value = Yes;
+        Agent_Image_Transparency_Value = 0.0;
+        Agent_Image_Transparency_Variable_Name = "";
+    }
+    Output {
+        Map_Element_Name = "枝";
+        Map_Element = Agent_Variable;
+        Output_Expression = "UNIVERSE.Map.Point";
+        Draw_Line = Yes;
+        Collection_Name = "UNIVERSE.Map.Point.ConnectPointsView";
+        Line_Type = 1;
+        Line_Arrow = 1;
+        Line_Width = 1;
+        Line_Color = 204, 204, 255;
+        Line_Type_Variable = "";
+        Line_Arrow_Variable = "";
+        Line_Width_Variable = "";
+        Line_Color_Variable = "";
+        Agent_Color = 255,0,0;
+        Marker_Id = 1;
+        Effective_Figures = 0;
+        Format_Id = 0;
+        Agent_Image_Direction = No;
+        Icon_Type = 0;
+        Icon_Var_Name = "";
+        Icon_Transparent = No;
+        Icon_Enlarg_Reduce = No;
+        Icon_File_Name = "";
+        Num_Display = No;
+        Num_Var_Name = "";
+        Agent_Image_Magnify_by_value = Yes;
+        Agent_Image_Magnify_Value = 1.0;
+        Agent_Image_Magnify_Variable_Name = "";
+        Agent_Image_Transparency_by_value = Yes;
+        Agent_Image_Transparency_Value = 0.0;
+        Agent_Image_Transparency_Variable_Name = "";
+    }
+}
+
+
+//-------------------------------------------------------
+// Bar Graph Output Definition Division
+//-------------------------------------------------------
+Bar_Graph {
+    Graph_Name = "Long Tail";
+    Title = "";
+    Disable = No;
+    Background_Color = 255, 255, 255;
+    Remarks = No;
+    Legend_Pos = Top;
+    FastDraw = No;
+    Position_x = 140;
+    Position_y = 4;
+    Size_x = 438;
+    Size_y = 187;
+    Map_Cell_Size = 0;
+    Axis_Label = "Division into 20", "BranchNumber";
+    Draw_By_JFree_Chart = Yes;
+    Scale = 0, 0.0, 0, 10.0, 0, 10.0;
+    ScaleAuto = Yes, Yes;
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    Draw_Timing = Simulation_Step;
+    Draw_Interval = 1;
+    Piled_Bar_Graph = No;
+    Bar_Direction = 2;
+    Output_Group_Name = "";
+    Output {
+        Graph_Element_Name = "0";
+        Line_Color = 255, 0, 0;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,0)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 0, 0);
+    }
+    Output {
+        Graph_Element_Name = "1";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,1)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "2";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,2)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "3";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,3)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "4";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,4)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "5";
+        Line_Color = 255, 0, 0;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,5)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 0, 0);
+    }
+    Output {
+        Graph_Element_Name = "6";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,6)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "7";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,7)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "8";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,8)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "9";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,9)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "10";
+        Line_Color = 255, 0, 0;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,10)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 0, 0);
+    }
+    Output {
+        Graph_Element_Name = "11";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,11)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "12";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,12)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "13";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,13)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "14";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,14)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "15";
+        Line_Color = 255, 0, 0;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,15)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 0, 0);
+    }
+    Output {
+        Graph_Element_Name = "16";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,16)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "17";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,17)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "18";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,18)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "19";
+        Line_Color = 255, 153, 153;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,19)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 153, 153);
+    }
+    Output {
+        Graph_Element_Name = "20";
+        Line_Color = 255, 0, 0;
+        Line_Width = 10;
+        Marker_Id = 0;
+        Output_Expression = "Universe.LongTailVariable(1,20)";
+        Expression_Value_Display = Yes;
+        Effective_Fraction_Figures = 0;
+        Graph_Element_Color = (255, 0, 0);
+    }
+}
+
+
+//-------------------------------------------------------
+// Numeric Data Window Output Definition Division
+//-------------------------------------------------------
+Numeric_Output {
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    Position_x = 582;
+    Position_y = 9;
+    Size_x = 200;
+    Size_y = 70;
+    Map_Cell_Size = 0;
+    Numeric_Name = "Counter";
+    Title = "";
+    Disable = No;
+    Output_Group_Name = "";
+    OUTPUT {
+        Output_Element_Name = "PointNumber";
+        Figures = 0;
+        Format_Id = 0;
+        Output_Expression = "Universe.PointNumber";
+    }
+}
+
+
+//-------------------------------------------------------
+// 2 Dimension Map Display Definition Division
+//-------------------------------------------------------
+Map_Output {
+    Map_Space_Name = "UNIVERSE.PlotGraph";
+    Map_Name = "Both logarithm graph (Involution rule)";
+    Title = "";
+    Disable = No;
+    Background_Color = 255, 255, 255;
+    Position_x = -2;
+    Position_y = 194;
+    Size_x = 381;
+    Size_y = 314;
+    Map_Cell_Size = 48;
+    Remarks = No;
+    Legend_Pos = Top;
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    FastDraw = No;
+    Draw_Timing = Simulation_Step;
+    Draw_Interval = 1;
+    Axis_Label = "BranchNumber(1 - 10,000)", "PointNumber(1 - 10,000)";
+    Draw_Range = 0, 0, 4, 4;
+    Ruled_Line = Yes;
+    Text_Display = No;
+    Text_Display_Variable_Name = "";
+    Chess_Type_Display_Position = No;
+    Background_Transparent = No;
+    Target_Layer = 0;
+    Coordinate_Display = No;
+    Space_Kind = Square_2D;
+    BG_Pict = No;
+    BG_Type = 0;
+    BG_Var_Name = "";
+    BG_File_Name = "";
+    Origin_Position = 2;
+    Output_Group_Name = "";
+    Output {
+        Map_Element_Name = "Point";
+        Map_Element = Agent_Variable;
+        Output_Expression = "UNIVERSE.PlotGraph.Point";
+        Draw_Line = No;
+        Collection_Name = "";
+        Line_Type = 0;
+        Line_Arrow = 0;
+        Line_Width = 0;
+        Line_Color = 0, 0, 0;
+        Line_Type_Variable = "";
+        Line_Arrow_Variable = "";
+        Line_Width_Variable = "";
+        Line_Color_Variable = "";
+        Agent_Color = 0,204,0;
+        Marker_Id = -1;
+        Effective_Figures = 0;
+        Format_Id = 0;
+        Agent_Image_Direction = No;
+        Icon_Type = 0;
+        Icon_Var_Name = "";
+        Icon_Transparent = No;
+        Icon_Enlarg_Reduce = No;
+        Icon_File_Name = "point.png";
+        Num_Display = Yes;
+        Num_Var_Name = "UNIVERSE.PlotGraph.Point.Frequency";
+        Agent_Image_Magnify_by_value = Yes;
+        Agent_Image_Magnify_Value = 1.0;
+        Agent_Image_Magnify_Variable_Name = "";
+        Agent_Image_Transparency_by_value = Yes;
+        Agent_Image_Transparency_Value = 0.0;
+        Agent_Image_Transparency_Variable_Name = "";
+    }
+}
+
+
+//-------------------------------------------------------
+// Control Panel Definition Division
+//-------------------------------------------------------
+Control_Panel {
+    Display_Area = 553, 13, 292, 110;
+    Display_Type = 0;
+    Panel_Item {
+        Item_Type = Slider;
+        Item_Name = "BranchNumber";
+        Display_Area = 0, 0, 0, 0;
+        Font_Name = "";
+        Font_Char_Set = 0;
+        Font_Size = 0.0;
+        Font_Style = 0;
+        Font_Color = 0, 0, 0;
+        Font_Background_Color = 0, 0, 0;
+        Var_Name = "UNIVERSE.BranchNumber";
+        Slider_Range_Max = 9;
+        Slider_Value_Min = 1.0;
+        Slider_Value_Step = 1.0;
+        Slider_Value = "2";
+    }
+    Panel_Item {
+        Item_Type = Toggle;
+        Item_Name = "View branch";
+        Display_Area = 0, 0, 0, 0;
+        Font_Name = "";
+        Font_Char_Set = 0;
+        Font_Size = 0.0;
+        Font_Style = 0;
+        Font_Color = 0, 0, 0;
+        Font_Background_Color = 0, 0, 0;
+        Var_Name = "UNIVERSE.BranchViewMode";
+        Control_On = Yes;
+        Control_On_Int = 1;
+        Control_On_Long = 0;
+        Control_On_Double = 1.0;
+        Control_On_String = "";
+        Control_Off = No;
+        Control_Off_Int = 0;
+        Control_Off_Long = 0;
+        Control_Off_Double = 0.0;
+        Control_Off_String = "";
+        Toggle_Button_On = Yes;
+        Slider_Range_Max = 9;
+        Slider_Value_Min = 1.0;
+        Slider_Value_Step = 1.0;
+        Slider_Value = "2";
+        Shortcut_Key = "";
+    }
+}
+
+
+//-------------------------------------------------------
+// Space Initial Value Definition Divsion
+//-------------------------------------------------------
+Space_Initial {
+}
+
+
+//-------------------------------------------------------
+// Other Miscellaneous Data Definition Division
+//-------------------------------------------------------
+Others_Data {
+    Indent = 4;
+    Rule_Colored = Yes;
+    Rule_LineNo = Yes;
+    Window_Hide_Run = 1;
+    Debug_Position_x = 531;
+    Debug_Position_y = 30;
+    Debug_Size_x = 709;
+    Debug_Size_y = 200;
+    Console_Position_x = 8;
+    Console_Position_y = 508;
+    Console_Size_x = 217;
+    Console_Size_y = 82;
+    Componen_Tree_Position_x = 2;
+    Componen_Tree_Position_y = 2;
+    Componen_Tree_Size_x = 278;
+    Componen_Tree_Size_y = 519;
+    Console_Background_Color = 16777215;
+    Console_Foreground_Color = 255;
+    Console_DisplayLines_Max = 500;
+    plug_in_module_name = "";
+    Font_Name = "Dialog";
+    Font_Char_Set = 0;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 0, 0, 0;
+}
+
+
+//-------------------------------------------------------
+// Network Information Definition Division
+//-------------------------------------------------------
+Network_Info {
+    Global_Space_Area = 0, 0, 100, 100;
+    Local_Space_Info {
+    }
+}
+
+
+//-------------------------------------------------------
+// Window Location Definition Division
+//-------------------------------------------------------
+Window_Rectangle {
+    Window_Name = Main_Window, 0, 0, 800, 700;
+    Window_Name = Artisoc_Help_Window, 10, 10, 400, 300;
+}
+
+
+//-------------------------------------------------------
+// Help Favorite Division
+//-------------------------------------------------------
+Help_Favorite {
+}

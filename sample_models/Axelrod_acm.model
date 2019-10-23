@@ -1,0 +1,421 @@
+//====================================================================/
+//　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　/
+// artisoc                                                            /
+//                                                                    /
+//====================================================================/
+
+Version = 1.0;
+
+
+
+//-------------------------------------------------------
+// Component Tree
+//-------------------------------------------------------
+UNIVERSE {
+    Space Map(0,0),Square_2D(10, 10, !Loop, North, 1){
+        AgtType Human(0, 0)[0] {
+            Dim ID(0, 0) As Integer = (0);
+            Dim X(0, 0) As Double = (0.0);
+            Dim Y(0, 0) As Double = (0.0);
+            Dim Layer(0, 0) As Integer = (0);
+            Dim Direction(0, 0) As Double = (0.0);
+            Dim Color(0, 0) As Integer = (0);
+            Dim Culture(0, 0) As String = ("");
+        }
+    }
+    Dim CultureLength(0, 0) As Integer = (0);
+    Dim CultureKind(0, 0) As Integer = (0);
+    Dim InteractionNumber(0, 0) As Integer = (0);
+    Dim ExitFlag(0, 0) As Boolean = (0);
+}
+
+
+//-------------------------------------------------------
+// Agent Variable Initial Data
+//-------------------------------------------------------
+Initial_Value {
+    UNIVERSE.CULTURELENGTH = 1(5);
+    UNIVERSE.CULTUREKIND = 1(10);
+}
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE
+Univ_Init{
+
+	dim objHuman As Agt
+	dim i as integer
+	dim j as integer
+
+	'Human Arrangement
+	for i = 1 to GetWidthSpace(Universe.Map)
+		for j = 1 to GetHeightSpace(Universe.Map)
+			objHuman = CreateAgt(Universe.Map.Human)
+			objHuman.X = i - 1
+			objHuman.Y = j - 1
+			objHuman.Culture = InitializeCulture()
+			objHuman.Color = CInt(objHuman.Culture) * 150
+		next j
+	next i
+	
+	Universe.ExitFlag = True
+	Universe.InteractionNumber = 0
+
+}
+
+Univ_Step_Begin{
+
+	if Universe.ExitFlag == False then
+		ExitSimulationMsg("Exit Simulation (" & GetCountStep() & ")" )
+	else
+		Universe.ExitFlag = False
+		Universe.InteractionNumber = 0
+	end if
+
+}
+
+Univ_Step_End{
+
+}
+
+Univ_Finish{
+
+}
+
+function InitializeCulture() as string
+{
+	dim strCulture as string
+	dim i as integer
+	
+	strCulture = ""
+	
+	for i = 1 to Universe.CultureLength
+		strCulture = strCulture & cstr(cint(rnd()*Universe.CultureKind))
+	next i
+
+	return(strCulture)
+}
+
+#end_rule UNIVERSE
+
+
+
+
+//-------------------------------------------------------
+// Agent Rule
+//-------------------------------------------------------
+#begin_rule UNIVERSE.MAP.HUMAN
+Agt_Init{
+
+}
+
+Agt_Step{
+
+	dim objNeighbors As Agt
+	dim SimilarRate as double
+	dim Max_Length as string
+	dim i  As Integer
+
+	CheckExit()
+
+	CheckCultureLength()
+	
+	objNeighbors = ChoiceNeighbors()
+	
+	SimilarRate = GetSimilarRate(My.Culture, objNeighbors.Culture)
+	if (0 < SimilarRate) AND (SimilarRate < 1) Then
+		if (SimilarRate > Rnd()) Then
+			Universe.InteractionNumber = Universe.InteractionNumber + 1
+			my.Culture = Interaction(my.Culture, objNeighbors.Culture)
+		End If
+	End If
+	
+	Max_Length = ""
+	for i = 1 to Universe.CultureLength
+		Max_Length = Max_Length & Universe.CultureKind -1 
+	next i
+	my.Color = (CInt(my.Culture) /CInt(Max_Length))*16581370
+	
+}
+
+Sub CheckExit()
+{
+	dim colNeighbors As AgtSet
+	dim objNeighbors As Agt
+	dim SimilarRate As Double
+
+	MakeAllAgtSetAroundOwnCell(colNeighbors, 1, False)
+
+	For Each objNeighbors In colNeighbors
+		SimilarRate = GetSimilarRate(My.Culture, objNeighbors.Culture)
+		If  SimilarRate > 0 AND SimilarRate < 1 Then
+			Universe.ExitFlag = True
+			break
+		End If
+	Next objNeighbors
+}
+
+function ChoiceNeighbors() As Agt
+{
+	dim colNeighbors As AgtSet
+	dim objNeighbors As Agt
+	dim nNeighbors as integer
+
+	MakeAllAgtSetAroundOwnCell(colNeighbors, 1, False)
+
+	nNeighbors = CountAgtSet(colNeighbors)
+
+	do while(1)
+		objNeighbors = GetAgt(colNeighbors, cint(rnd()*nNeighbors))
+
+		if objNeighbors != My then
+			break
+		end if
+	loop
+
+	return(objNeighbors)
+}
+
+function GetSimilarRate(myStr as string, yourStr as string) as double
+{
+	dim i as integer
+	dim hitN as double
+
+	hitN = 0
+	
+	For i=1 To Universe.CultureLength
+		If StrComp(Mid(myStr, i, 1),Mid(yourStr, i, 1)) == 0 Then
+			hitN = hitN + 1
+		End If
+	Next i
+
+	return(hitN/CDbl(Universe.CultureLength))
+}
+
+// One character with different culture is substituted
+function Interaction(myStr As String, yourStr As String) As String
+{
+	dim NewCulture as string
+	dim i as integer
+	dim hitN as integer
+	dim DifferentCulturePosition(100) as integer
+	dim pos as integer
+	dim InteractionPosition as integer
+	
+	hitN = 0
+	
+	'Get DifferentCulturePosition
+	For i=1 To Universe.CultureLength
+		If StrComp(Mid(myStr, i, 1),Mid(yourStr, i, 1)) <> 0 Then
+			DifferentCulturePosition(hitN) = i
+			hitN = hitN + 1
+		End If
+	Next i
+	
+	'Interaction
+	pos = hitN * Rnd()
+	InteractionPosition = DifferentCulturePosition(pos)
+	If InteractionPosition > 1 Then
+		NewCulture = Left(myStr, InteractionPosition-1) & Mid(yourStr, InteractionPosition, 1)
+	Else
+		NewCulture = Left(yourStr, 1)
+	End If	
+
+	If Universe.CultureLength > InteractionPosition Then
+		NewCulture = NewCulture & Right(myStr, (Universe.CultureLength - InteractionPosition))
+	End If	
+	
+	return(NewCulture)
+}
+
+Sub CheckCultureLength()
+{
+	if len(my.Culture) <> Universe.CultureLength Then
+		ExitSimulationMsg("During the simulation is execute, you can't change value of CultureLength")
+	End If
+}
+#end_rule UNIVERSE.MAP.HUMAN
+
+
+
+
+//-------------------------------------------------------
+// Simulation Definition Division
+//-------------------------------------------------------
+Single_Simulation {
+    Step_Max = 0;
+    Time_Max = 0;
+    End_Condition = "";
+    Exec_Wait = 1;
+    Exec_Order = Random;
+    Exec_Order_Random_First_Step_Only = No;
+    Random_Seed = 0;
+    Log_File = "", Fixed, Append, 0;
+    Replay_Log_File = "", Fixed, Append, 0;
+    Redraw_Timing = Step;
+    Redraw_Interval = 1;
+    Garbage_Interval = 0;
+}
+
+
+//-------------------------------------------------------
+// Simulation Loop Definition Division
+//-------------------------------------------------------
+Repeat_Simulation {
+    Value_Change = None;
+    Initial_Value_Change_None {
+        Repeat_Max = 1;
+    }
+}
+
+
+//-------------------------------------------------------
+// 2 Dimension Map Display Definition Division
+//-------------------------------------------------------
+Map_Output {
+    Map_Space_Name = "Universe.Map";
+    Map_Name = "Map Output";
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    Title = "Map Output";
+    Axis_Label = "", "";
+    Draw_Range = 0, 0, 9, 9;
+    Ruled_Line = No;
+    Chess_Type_Display_Position = No;
+    Remarks = Yes;
+    Legend_Pos = Top;
+    Background_Color = 255, 255, 255;
+    Background_Transparent = No;
+    Target_Layer = 0;
+    Coordinate_Display = No;
+    Space_Kind = Square_2D;
+    BG_Pict = No;
+    BG_Type = 0;
+    BG_Var_Name = "";
+    BG_File_Name = "";
+    Disable = No;
+    Position_x = 253;
+    Position_y = 5;
+    Size_x = 535;
+    Size_y = 433;
+    Origin_Position = 2;
+    Output {
+        Map_Element_Name = "Human";
+        Map_Element = Agent_Variable;
+        Output_Expression = "Universe.Map.Human";
+        Draw_Line = No;
+        Collection_Name = "";
+        Line_Type = 0;
+        Line_Arrow = 0;
+        Line_Width = 0;
+        Line_Color = 0, 0, 0;
+        Line_Type_Variable = "";
+        Line_Arrow_Variable = "";
+        Line_Width_Variable = "";
+        Line_Color_Variable = "";
+        Agent_Color = "Universe.Map.Human.Color";
+        Marker_Id = 1;
+        Effective_Figures = 0;
+        Format_Id = 0;
+        Icon_Type = 0;
+        Icon_Var_Name = "";
+        Icon_Transparent = No;
+        Icon_Enlarg_Reduce = No;
+        Icon_File_Name = "";
+        Num_Display = Yes;
+        Num_Var_Name = "Universe.Map.Human.Culture";
+    }
+}
+
+
+//-------------------------------------------------------
+// Time Graph Display Definition Division
+//-------------------------------------------------------
+Time_Graph {
+    Graph_Name = "InteractionNumber";
+    Font_Name = "Dialog";
+    Font_Char_Set = 81;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 255, 255, 255;
+    Title = "";
+    Axis_Label = "", "";
+    Scale = 0, 0.0, 1000, 100.0, 50, 10.0;
+    Remarks = No;
+    Legend_Pos = Top;
+    Background_Color = 0, 0, 0;
+    Disable = No;
+    Position_x = 284;
+    Position_y = 426;
+    Size_x = 500;
+    Size_y = 175;
+    Output {
+        Graph_Element_Name = "InteractionNumber";
+        Line_Color = 0, 0, 204;
+        Line_Width = 1;
+        Marker_Id = 0;
+        Output_Expression = "Universe.InteractionNumber";
+        Expression_Value_Display = No;
+        Effective_Fraction_Figures = 0;
+    }
+}
+
+
+//-------------------------------------------------------
+// Control Panel Definition Division
+//-------------------------------------------------------
+Control_Panel {
+    Display_Area = 634, 129, 150, 212;
+}
+
+
+//-------------------------------------------------------
+// Space Initial Value Definition Divsion
+//-------------------------------------------------------
+Space_Initial {
+}
+
+
+//-------------------------------------------------------
+// Other Miscellaneous Data Definition Division
+//-------------------------------------------------------
+Others_Data {
+    Indent = 4;
+    Rule_Colored = Yes;
+    Font_Name = "Dialog";
+    Font_Char_Set = 0;
+    Font_Size = 12.0;
+    Font_Style = 0;
+    Font_Color = 0, 0, 0;
+    Font_Background_Color = 0, 0, 0;
+    Window_Hide_Run = 1;
+    Debug_Position_x = 75;
+    Debug_Position_y = 75;
+    Debug_Size_x = 400;
+    Debug_Size_y = 200;
+    Console_Position_x = 0;
+    Console_Position_y = 439;
+    Console_Size_x = 272;
+    Console_Size_y = 126;
+    Componen_Tree_Position_x = 2;
+    Componen_Tree_Position_y = 2;
+    Componen_Tree_Size_x = 250;
+    Componen_Tree_Size_y = 400;
+}
+
+
+//-------------------------------------------------------
+// Network Information Definition Division
+//-------------------------------------------------------
+Network_Info {
+    Global_Space_Area = 0, 0, 100, 100;
+    Local_Space_Info {
+    }
+}
