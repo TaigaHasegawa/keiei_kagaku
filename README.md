@@ -5,7 +5,7 @@
 ```
 git clone https://github.com/TaigaHasegawa/kiei_kagaku.git
 ```
-を実行するとダウンロードできる。最新版に反映したい場合は、
+を実行するとダウンロードできる。最新版を反映したい場合は、
 ```
 git pull 
 ```
