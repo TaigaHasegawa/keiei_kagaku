@@ -19,6 +19,9 @@ UNIVERSE {
             Dim Y(0, 0) As Double = ();
             Dim Layer(0, 0) As Integer = ();
             Dim Direction(0, 0) As Double = ();
+            Dim kikikan(0, 0) As Integer = ();
+            Dim kikikan_ikiti(0, 0) As Integer = ();
+            Dim kikikan_kando(0, 0) As Double = ();
         }
         AgtType shelter(0, 0)[0] {
             Dim ID(0, 0) As Integer = ();
@@ -49,8 +52,17 @@ Univ_Init{
 Dim i As Integer
 Dim people As Agtset
 Dim shelters As Agtset
+Dim one As Agt
 For i = 0 To Universe.NINZU-1
-	CreateAgt(Universe.Area_A.person)
+	one = CreateAgt(Universe.Area_A.person)
+	If Rnd() < 0.3 Then 
+		one.kikikan_ikiti = 20
+	Else if 0.3 <= Rnd() And Rnd()< 0.6 Then
+		one.kikikan_ikiti = 15
+	Else
+		one.kikikan_ikiti = 10
+	End if
+	End if
 Next i
 For i = 0 To Universe.n_shelter-1
 	CreateAgt(Universe.Area_A.shelter)
@@ -82,10 +94,23 @@ Univ_Finish{
 //-------------------------------------------------------
 #begin_rule UNIVERSE.AREA_A.PERSON
 Agt_Init{
-
+Dim past_level As Integer
+past_level = 0
 }
 
 Agt_Step{
+If Universe.keikoku_level != past_level Then
+	If Universe.keikoku_level == 1 Then
+		My.kikikan = My.kikikan + 5
+	Else if Universe.keikoku_level == 2 Then
+		My.kikikan = My.kikikan + 7
+	Else if Universe.keikoku_level == 3 Then
+		My.kikikan = My.kikikan + 10
+	End if
+End if
+past_level = Universe.keikoku_level
+If My.kikikan >= My.kikikan_ikiti Then 
+	
 
 }
 #end_rule UNIVERSE.AREA_A.PERSON
@@ -253,7 +278,7 @@ Map_Output {
 // Control Panel Definition Division
 //-------------------------------------------------------
 Control_Panel {
-    Display_Area = 933, 294, 402, 100;
+    Display_Area = 933, 266, 402, 100;
     Display_Type = 0;
     Panel_Item {
         Item_Type = Slider;
