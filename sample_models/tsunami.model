@@ -45,7 +45,7 @@ UNIVERSE {
 // Agent Variable Initial Data
 //-------------------------------------------------------
 Initial_Value {
-    UNIVERSE.NINZU = 1(100);
+    UNIVERSE.NINZU = 1(1500);
     UNIVERSE.N_SHELTER = 1(20);
     UNIVERSE.KEIKOKU_LEVEL = 1(3);
 }
@@ -125,12 +125,12 @@ If Universe.keikoku_level > Universe.past_level Then
 	End if
 End if
 
-If GetCountStep() Mod 5==0 Then
+If GetCountStep() Mod 2==0 Then
 	If My.kikikan < My.kikikan_ikiti Then
-		MakeOneAgtsetAroundOwn(neighbor, 2, Universe.Area_A.person, False)
+		MakeOneAgtsetAroundOwn(neighbor, 3, Universe.Area_A.person, False)
 		For each one in neighbor
 			if one.evacuation == Color_Green Then
-				My.kikikan = My.kikikan + 0.005
+				My.kikikan = My.kikikan + 0.05
 			end if
 		Next one
 	End If
@@ -185,7 +185,7 @@ Single_Simulation {
     Step_Max = 0;
     Time_Max = 0;
     End_Condition = "";
-    Exec_Wait = 384;
+    Exec_Wait = 279;
     Exec_Wait_Max = 0;
     Random_Generator = Java_Standard;
     Exec_Order = Random;
@@ -390,7 +390,7 @@ Control_Panel {
         Slider_Range_Max = 29;
         Slider_Value_Min = 100.0;
         Slider_Value_Step = 100.0;
-        Slider_Value = "0";
+        Slider_Value = "14";
     }
     Panel_Item {
         Item_Type = Slider;
