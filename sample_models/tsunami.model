@@ -19,10 +19,10 @@ UNIVERSE {
             Dim Y(0, 0) As Double = (0.0);
             Dim Layer(0, 0) As Integer = (0);
             Dim Direction(0, 0) As Double = (0.0);
-            Dim kikikan(0, 0) As Double = ();
-            Dim kikikan_ikiti(0, 0) As Double = ();
+            Dim kikikan(0, 0) As Double = (0.0);
+            Dim kikikan_ikiti(0, 0) As Double = (0.0);
             Dim kikikan_kando(0, 0) As Double = (0.0);
-            Dim evacuation(0, 0) As Integer = ();
+            Dim evacuation(0, 0) As Integer = (0);
         }
         AgtType shelter(0, 0)[0] {
             Dim ID(0, 0) As Integer = (0);
@@ -35,9 +35,9 @@ UNIVERSE {
     Dim NINZU(0, 0) As Integer = (0);
     Dim n_shelter(0, 0) As Integer = (0);
     Dim keikoku_level(0, 0) As Integer = (0);
-    Dim evacuated(0, 0) As Integer = ();
-    Dim past_level(0, 0) As Integer = ();
-    Dim average_kikikan(0, 0) As Double = ();
+    Dim evacuated(0, 0) As Integer = (0);
+    Dim past_level(0, 0) As Integer = (0);
+    Dim average_kikikan(0, 0) As Double = (0.0);
 }
 
 
@@ -45,7 +45,7 @@ UNIVERSE {
 // Agent Variable Initial Data
 //-------------------------------------------------------
 Initial_Value {
-    UNIVERSE.NINZU = 1(1500);
+    UNIVERSE.NINZU = 1(1000);
     UNIVERSE.N_SHELTER = 1(20);
     UNIVERSE.KEIKOKU_LEVEL = 1(3);
 }
@@ -62,7 +62,7 @@ Dim shelters As Agtset
 Dim one As Agt
 For i = 0 To Universe.NINZU-1
 	one = CreateAgt(Universe.Area_A.person)
-	one.kikikan_ikiti = Rnd()+0.01
+	one.kikikan_ikiti = Rnd()+0.05
 	one.evacuation = Color_Red
 Next i
 For i = 0 To Universe.n_shelter-1
@@ -117,11 +117,11 @@ Dim distance As Double
 Dim threat As Agt
 If Universe.keikoku_level > Universe.past_level Then
 	If Universe.keikoku_level == 1 Then
-		My.kikikan = My.kikikan + 0.05
+		My.kikikan = My.kikikan + 0.02 + Rnd()*0.05
 	Elseif Universe.keikoku_level == 2 Then
-		My.kikikan = My.kikikan + 0.1
+		My.kikikan = My.kikikan + 0.08 + Rnd()*0.05
 	Elseif Universe.keikoku_level == 3 Then
-		My.kikikan = My.kikikan + 0.2
+		My.kikikan = My.kikikan + 0.14 + Rnd()*0.05
 	End if
 End if
 
@@ -130,7 +130,7 @@ If GetCountStep() Mod 2==0 Then
 		MakeOneAgtsetAroundOwn(neighbor, 3, Universe.Area_A.person, False)
 		For each one in neighbor
 			if one.evacuation == Color_Green Then
-				My.kikikan = My.kikikan + 0.05
+				My.kikikan = My.kikikan + Rnd()*0.05
 			end if
 		Next one
 	End If
@@ -374,7 +374,7 @@ Time_Graph {
 // Control Panel Definition Division
 //-------------------------------------------------------
 Control_Panel {
-    Display_Area = 933, 266, 402, 100;
+    Display_Area = 927, 137, 402, 100;
     Display_Type = 0;
     Panel_Item {
         Item_Type = Slider;
@@ -390,7 +390,7 @@ Control_Panel {
         Slider_Range_Max = 29;
         Slider_Value_Min = 100.0;
         Slider_Value_Step = 100.0;
-        Slider_Value = "14";
+        Slider_Value = "9";
     }
     Panel_Item {
         Item_Type = Slider;
