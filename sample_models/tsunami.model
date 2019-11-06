@@ -45,7 +45,7 @@ UNIVERSE {
 // Agent Variable Initial Data
 //-------------------------------------------------------
 Initial_Value {
-    UNIVERSE.NINZU = 1(1000);
+    UNIVERSE.NINZU = 1(1600);
     UNIVERSE.N_SHELTER = 1(20);
     UNIVERSE.KEIKOKU_LEVEL = 1(3);
 }
@@ -117,11 +117,11 @@ Dim distance As Double
 Dim threat As Agt
 If Universe.keikoku_level > Universe.past_level Then
 	If Universe.keikoku_level == 1 Then
-		My.kikikan = My.kikikan + 0.02 + Rnd()*0.05
+		My.kikikan = My.kikikan + 0.08 + Rnd()*0.1
 	Elseif Universe.keikoku_level == 2 Then
-		My.kikikan = My.kikikan + 0.08 + Rnd()*0.05
+		My.kikikan = My.kikikan + 0.08 + Rnd()*0.2
 	Elseif Universe.keikoku_level == 3 Then
-		My.kikikan = My.kikikan + 0.14 + Rnd()*0.05
+		My.kikikan = My.kikikan + 0.08 + Rnd()*0.3
 	End if
 End if
 
@@ -185,7 +185,7 @@ Single_Simulation {
     Step_Max = 0;
     Time_Max = 0;
     End_Condition = "";
-    Exec_Wait = 0;
+    Exec_Wait = 256;
     Exec_Wait_Max = 0;
     Random_Generator = Java_Standard;
     Exec_Order = Random;
@@ -390,7 +390,7 @@ Control_Panel {
         Slider_Range_Max = 29;
         Slider_Value_Min = 100.0;
         Slider_Value_Step = 100.0;
-        Slider_Value = "9";
+        Slider_Value = "15";
     }
     Panel_Item {
         Item_Type = Slider;
