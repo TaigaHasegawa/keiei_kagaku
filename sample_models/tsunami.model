@@ -83,10 +83,10 @@ Universe.average_kikikan = 0
 Univ_Step_End{
 Universe.past_level = Universe.keikoku_level 
 If Universe.evacuated == Universe.NINZU  Then
-	ExitSimulationMsgLn("Everyone evacuated after" & GetCountStep() & "steps")
+	ExitSimulationMsgLn("Everyone evacuated after" & GetCountStep() & "steps : Evacuated People = " & Universe.evacuated/ Universe.NINZU & ", Average Kikikan = "& Universe.average_kikikan / Universe.NINZU)
 End if
 If GetCountStep() == 100 Then
-	ExitSimulationMsgLn("Disaster ends after" & GetCountStep() & "steps")
+	ExitSimulationMsgLn("Disaster ends after" & GetCountStep() & "steps : Evacuated People = " & Universe.evacuated/ Universe.NINZU & ", Average Kikikan = "& Universe.average_kikikan / Universe.NINZU)
 End if
 }
 
@@ -185,7 +185,7 @@ Single_Simulation {
     Step_Max = 0;
     Time_Max = 0;
     End_Condition = "";
-    Exec_Wait = 279;
+    Exec_Wait = 0;
     Exec_Wait_Max = 0;
     Random_Generator = Java_Standard;
     Exec_Order = Random;
