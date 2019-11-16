@@ -1,4 +1,7 @@
 # kiei_kagaku
+
+東京大学の経営科学１のグループワークようのrepo。
+
 最終レポートは./sample_models/tsunami.modelで編集中。
 
 自分のデスクトップ上にはコマンドラインで
